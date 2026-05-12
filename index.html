@@ -39,15 +39,51 @@ body {
   overflow-x: hidden;
   max-width: 100vw;
   position: relative;
+  cursor: none;
 }
 h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+/* ── CUSTOM CURSOR ── */
+.cursor-dot {
+  position: fixed;
+  width: 8px; height: 8px;
+  background: var(--teal);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+}
+.cursor-ring {
+  position: fixed;
+  width: 36px; height: 36px;
+  border: 1.5px solid rgba(45,212,191,0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform 0.12s ease, width 0.3s, height 0.3s, border-color 0.3s;
+}
+body:has(a:hover) .cursor-dot, body:has(button:hover) .cursor-dot { width: 12px; height: 12px; background: var(--teal); }
+body:has(a:hover) .cursor-ring, body:has(button:hover) .cursor-ring { width: 52px; height: 52px; border-color: rgba(45,212,191,0.7); }
+
+/* ── SCROLL PROGRESS ── */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), var(--purple));
+  z-index: 200;
+  width: 0%;
+  transition: width 0.1s linear;
+}
 
 /* ── NOISE TEXTURE ── */
 body::before {
   content:'';
   position:fixed;
   inset:0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
   pointer-events:none;
   z-index:0;
 }
@@ -61,15 +97,19 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(10,15,26,0.85);
-  backdrop-filter: blur(16px);
+  background: rgba(10,15,26,0.8);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
+  transition: background 0.3s;
 }
+nav.scrolled { background: rgba(10,15,26,0.95); }
 .logo {
   font-family: 'Syne', sans-serif;
   font-weight: 800;
   font-size: 20px;
   letter-spacing: -0.5px;
+  text-decoration: none;
+  color: var(--text);
 }
 .logo span { color: var(--teal); }
 nav ul { display:flex; gap:28px; list-style:none; }
@@ -79,8 +119,65 @@ nav a {
   font-size: 14px;
   font-weight: 500;
   transition: color 0.2s;
+  position: relative;
 }
-nav a:hover { color: var(--text); }
+nav ul a::after {
+  content:'';
+  position:absolute;
+  bottom:-2px; left:0; right:0;
+  height:1px;
+  background: var(--teal);
+  transform: scaleX(0);
+  transition: transform 0.2s;
+}
+nav ul a:hover { color: var(--text); }
+nav ul a:hover::after { transform: scaleX(1); }
+nav ul a.active { color: var(--teal); }
+
+/* Hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px;
+  background: none;
+  border: none;
+}
+.hamburger span {
+  display: block;
+  width: 22px; height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 61px; left: 0; right: 0;
+  background: rgba(10,15,26,0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 24px;
+  z-index: 99;
+  flex-direction: column;
+  gap: 16px;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--teal); }
 
 /* ── HERO ── */
 .hero {
@@ -92,16 +189,28 @@ nav a:hover { color: var(--text); }
   text-align: center;
   padding: 120px 40px 80px;
   position: relative;
+  overflow: hidden;
+}
+#heroCanvas {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  pointer-events: none;
 }
 .hero-glow {
   position: absolute;
   top: 20%;
   left: 50%;
   transform: translateX(-50%);
-  width: 600px;
-  height: 400px;
-  background: radial-gradient(ellipse, rgba(45,212,191,0.06) 0%, transparent 70%);
+  width: 700px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(45,212,191,0.07) 0%, transparent 70%);
   pointer-events: none;
+  animation: glowPulse 4s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%,100% { opacity:0.6; transform:translateX(-50%) scale(1); }
+  50% { opacity:1; transform:translateX(-50%) scale(1.05); }
 }
 .badge {
   display: inline-flex;
@@ -117,6 +226,10 @@ nav a:hover { color: var(--text); }
   padding: 6px 14px;
   border-radius: 100px;
   margin-bottom: 32px;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.2s forwards;
+  position: relative;
+  z-index: 1;
 }
 .badge-dot {
   width: 6px; height: 6px;
@@ -125,8 +238,12 @@ nav a:hover { color: var(--text); }
   animation: pulse 2s infinite;
 }
 @keyframes pulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50% { opacity:0.5; transform:scale(0.8); }
+  0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(45,212,191,0.4); }
+  50% { opacity:0.8; transform:scale(0.9); box-shadow:0 0 0 4px rgba(45,212,191,0); }
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
 }
 .hero h1 {
   font-size: clamp(40px, 6vw, 80px);
@@ -135,36 +252,83 @@ nav a:hover { color: var(--text); }
   letter-spacing: -2px;
   margin-bottom: 24px;
   max-width: 820px;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.4s forwards;
+  position: relative;
+  z-index: 1;
 }
-.hero h1 em {
-  font-style: normal;
-  color: var(--teal);
-}
+.hero h1 em { font-style: normal; color: var(--teal); }
 .hero p {
   font-size: 18px;
   color: var(--muted);
   max-width: 560px;
   margin-bottom: 48px;
   font-weight: 300;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.6s forwards;
+  position: relative;
+  z-index: 1;
 }
 .hero-cta {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
   justify-content: center;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.8s forwards;
+  position: relative;
+  z-index: 1;
 }
+
+/* Stats bar */
+.hero-stats {
+  display: flex;
+  gap: 48px;
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  opacity: 0;
+  animation: fadeUp 0.6s 1s forwards;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.stat-item { text-align: center; }
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  color: var(--teal);
+  letter-spacing: -1px;
+  display: block;
+}
+.stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
 .btn-primary {
   background: var(--teal);
   color: #0a0f1a;
   padding: 14px 28px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
   text-decoration: none;
   font-family: 'Syne', sans-serif;
-  transition: all 0.2s;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
 }
-.btn-primary:hover { background: #5eead4; transform: translateY(-1px); }
+.btn-primary::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: rgba(255,255,255,0.15);
+  transform: translateX(-100%);
+  transition: transform 0.3s;
+}
+.btn-primary:hover::after { transform: translateX(0); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(45,212,191,0.3); }
+
 .btn-secondary {
   border: 1px solid var(--border2);
   color: var(--text);
@@ -173,12 +337,12 @@ nav a:hover { color: var(--text); }
   font-weight: 500;
   font-size: 15px;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.25s;
   background: var(--bg2);
 }
-.btn-secondary:hover { border-color: var(--teal); color: var(--teal); }
+.btn-secondary:hover { border-color: var(--teal); color: var(--teal); transform: translateY(-2px); }
 
-/* ── PROBLEM ── */
+/* ── SECTIONS ── */
 .section {
   max-width: 1100px;
   margin: 0 auto;
@@ -208,7 +372,15 @@ nav a:hover { color: var(--text); }
   font-weight: 300;
 }
 
-/* ── ANALOGY CARD ── */
+/* ── REVEAL ANIMATION ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.65s cubic-bezier(.4,0,.2,1), transform 0.65s cubic-bezier(.4,0,.2,1);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── ANALOGY CARDS ── */
 .analogy-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -220,9 +392,21 @@ nav a:hover { color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 28px;
-  transition: border-color 0.2s;
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
 }
-.analogy-card:hover { border-color: var(--border2); }
+.analogy-card::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(45,212,191,0.05), transparent 60%);
+  opacity:0;
+  transition: opacity 0.3s;
+  pointer-events:none;
+}
+.analogy-card:hover { border-color: var(--border2); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+.analogy-card:hover::after { opacity:1; }
 .analogy-card .icon {
   width: 44px; height: 44px;
   border-radius: 10px;
@@ -231,16 +415,13 @@ nav a:hover { color: var(--text); }
   justify-content: center;
   font-size: 20px;
   margin-bottom: 16px;
+  transition: transform 0.3s;
 }
-.analogy-card h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  letter-spacing: -0.3px;
-}
+.analogy-card:hover .icon { transform: scale(1.1) rotate(-5deg); }
+.analogy-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
 .analogy-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
 
-/* ── HOW IT WORKS / PIPELINE ── */
+/* ── PIPELINE ── */
 .pipeline-section {
   background: var(--bg2);
   border-top: 1px solid var(--border);
@@ -261,26 +442,25 @@ nav a:hover { color: var(--text); }
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
-  transition: all 0.2s;
+  transition: all 0.25s;
   font-family: 'DM Sans', sans-serif;
 }
 .step-btn.active {
   background: var(--teal-dim);
   border-color: rgba(45,212,191,0.3);
   color: var(--teal);
+  box-shadow: 0 0 12px rgba(45,212,191,0.15);
 }
 .step-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
 
 .steps-content { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
 .step-panel { display: none; }
 .step-panel.active { display: contents; }
+.step-panel-wrap { display: none; grid-column: 1/-1; }
+.step-panel-wrap.active { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; animation: panelIn 0.4s ease; }
+@keyframes panelIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 
-.step-info h3 {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  margin-bottom: 14px;
-}
+.step-info h3 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 14px; }
 .step-info p { color: var(--muted); margin-bottom: 20px; }
 .step-detail {
   background: var(--card);
@@ -300,39 +480,33 @@ nav a:hover { color: var(--text); }
   position: relative;
   overflow: hidden;
 }
-
-/* Terminal animation */
-.terminal {
-  font-family: 'DM Mono', 'Courier New', monospace;
-  font-size: 13px;
+.step-visual::before {
+  content:'';
+  position:absolute;
+  top:-50%; right:-50%;
+  width:200%; height:200%;
+  background: radial-gradient(circle at 70% 30%, rgba(45,212,191,0.03), transparent 60%);
+  pointer-events:none;
 }
-.t-line { margin-bottom: 6px; }
+
+/* Terminal */
+.terminal { font-family: 'Courier New', monospace; font-size: 13px; }
+.t-line { margin-bottom: 6px; opacity:0; animation: termLine 0.3s forwards; }
 .t-prompt { color: var(--teal); }
 .t-cmd { color: var(--text); }
 .t-out { color: var(--muted); }
 .t-ok { color: #4ade80; }
 .t-warn { color: var(--amber); }
-.t-err { color: var(--coral); }
-.cursor { animation: blink 1s infinite; }
-@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+@keyframes termLine { to { opacity:1; } }
 
 /* Score bars */
-.score-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
+.score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .score-label { font-size: 13px; color: var(--muted); width: 130px; flex-shrink: 0; }
 .score-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
-.score-bar {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.8s cubic-bezier(.4,0,.2,1);
-}
+.score-bar { height: 100%; border-radius: 99px; width: 0%; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
 .score-val { font-size: 12px; color: var(--text); width: 36px; text-align: right; }
 
-/* Agent cards */
+/* Agent rows */
 .agent-row {
   display: flex;
   align-items: center;
@@ -342,34 +516,27 @@ nav a:hover { color: var(--text); }
   margin-bottom: 8px;
   background: rgba(255,255,255,0.03);
   font-size: 13px;
+  transition: background 0.2s;
 }
-.agent-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.agent-row:hover { background: rgba(255,255,255,0.05); }
+.agent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.agent-dot.live { animation: agentPulse 1.5s infinite; }
+@keyframes agentPulse {
+  0%,100% { box-shadow: 0 0 0 0 currentColor; }
+  50% { box-shadow: 0 0 0 4px transparent; }
 }
 .agent-name { font-weight: 500; flex:1; }
-.agent-status {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 100px;
-  font-weight: 500;
-}
+.agent-status { font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 500; }
 
 /* ── USE CASES ── */
-.usecases-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 48px;
-}
+.usecases-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px; }
 .usecase-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 32px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
   position: relative;
   overflow: hidden;
 }
@@ -379,103 +546,41 @@ nav a:hover { color: var(--text); }
   top: 0; left: 0; right: 0;
   height: 2px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.3s;
 }
-.usecase-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.usecase-card::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.03), transparent 50%);
+  opacity:0;
+  transition: opacity 0.3s;
+}
+.usecase-card:hover { border-color: var(--border2); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
 .usecase-card:hover::before { opacity: 1; }
+.usecase-card:hover::after { opacity: 1; }
 .usecase-card.healthcare::before { background: linear-gradient(90deg, var(--teal), transparent); }
 .usecase-card.legal::before { background: linear-gradient(90deg, var(--purple), transparent); }
 .usecase-card.finance::before { background: linear-gradient(90deg, var(--amber), transparent); }
 .usecase-card.manufacturing::before { background: linear-gradient(90deg, var(--coral), transparent); }
-
-.uc-icon {
-  width: 48px; height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  margin-bottom: 20px;
-}
-.usecase-card h3 {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  margin-bottom: 6px;
-}
-.usecase-card .industry {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 16px;
-}
+.uc-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; transition: transform 0.3s; }
+.usecase-card:hover .uc-icon { transform: scale(1.1); }
+.usecase-card h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px; }
+.usecase-card .industry { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; }
 .usecase-card p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
-
-.scenario {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-}
-.scenario-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-.scenario-msg {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 8px;
-  padding-left: 10px;
-  border-left: 2px solid var(--border2);
-}
-.scenario-reply {
-  font-size: 13px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-top: 8px;
-}
-.privacy-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(45,212,191,0.08);
-  border: 1px solid rgba(45,212,191,0.2);
-  color: var(--teal);
-  font-size: 11px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 100px;
-  margin-top: 12px;
-}
+.scenario { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.scenario-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.scenario-msg { font-size: 13px; color: var(--muted); margin-bottom: 8px; padding-left: 10px; border-left: 2px solid var(--border2); }
+.scenario-reply { font-size: 13px; padding: 8px 12px; border-radius: 6px; margin-top: 8px; }
+.privacy-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.2); color: var(--teal); font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 100px; margin-top: 12px; }
 
 /* ── COMPARISON ── */
-.compare-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 40px;
-  font-size: 14px;
-}
-.compare-table th {
-  padding: 14px 20px;
-  text-align: left;
-  font-family: 'Syne', sans-serif;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-}
-.compare-table td {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
+.compare-table { width: 100%; border-collapse: collapse; margin-top: 40px; font-size: 14px; }
+.compare-table th { padding: 14px 20px; text-align: left; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
+.compare-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: top; transition: background 0.2s; }
 .compare-table tr:last-child td { border-bottom: none; }
-.compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+.compare-table tbody tr { transition: all 0.2s; }
+.compare-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
 .compare-table .feature-col { font-weight: 500; color: var(--text); }
 .check { color: #4ade80; font-size: 16px; }
 .cross { color: var(--coral); font-size: 16px; }
@@ -484,88 +589,52 @@ nav a:hover { color: var(--text); }
 
 /* ── FAQ ── */
 .faq-list { margin-top: 40px; }
-.faq-item {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-bottom: 12px;
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
+.faq-item { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
 .faq-item:hover { border-color: var(--border2); }
-.faq-q {
-  width: 100%;
-  padding: 20px 24px;
-  background: var(--card);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  border: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-.faq-q::after {
-  content: '+';
-  font-size: 20px;
-  color: var(--muted);
-  transition: transform 0.2s;
-  flex-shrink: 0;
-}
-.faq-item.open .faq-q::after { transform: rotate(45deg); }
-.faq-a {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-  background: var(--bg2);
-}
-.faq-item.open .faq-a { max-height: 300px; }
-.faq-a-inner {
-  padding: 20px 24px;
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.7;
-}
+.faq-item.open { border-color: rgba(45,212,191,0.25); box-shadow: 0 0 20px rgba(45,212,191,0.05); }
+.faq-q { width: 100%; padding: 20px 24px; background: var(--card); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; text-align: left; cursor: pointer; border: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; transition: background 0.2s; }
+.faq-q:hover { background: rgba(255,255,255,0.03); }
+.faq-q::after { content: '+'; font-size: 20px; color: var(--muted); transition: transform 0.3s, color 0.3s; flex-shrink: 0; }
+.faq-item.open .faq-q::after { transform: rotate(45deg); color: var(--teal); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(.4,0,.2,1); background: var(--bg2); }
+.faq-item.open .faq-a { max-height: 400px; }
+.faq-a-inner { padding: 20px 24px; font-size: 14px; color: var(--muted); line-height: 1.7; }
 
-/* ── CTA SECTION ── */
-.cta-section {
-  text-align: center;
-  padding: 100px 40px;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
-  border-top: 1px solid var(--border);
+/* ── CONTACT ── */
+.divider { border: none; border-top: 1px solid var(--border); }
+
+/* ── BACK TO TOP ── */
+.back-top {
+  position: fixed;
+  bottom: 32px; right: 32px;
+  width: 44px; height: 44px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--teal);
+  text-decoration: none;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  font-size: 18px;
 }
-.cta-section h2 {
-  font-size: clamp(32px,5vw,56px);
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  margin-bottom: 20px;
-}
-.cta-section p { color: var(--muted); font-size: 17px; margin-bottom: 40px; }
+.back-top.visible { opacity: 1; transform: translateY(0); }
+.back-top:hover { background: var(--teal); color: #0a0f1a; transform: translateY(-2px); }
 
 /* ── FOOTER ── */
-footer {
-  text-align: center;
-  padding: 32px 40px;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* ── DIVIDER ── */
-.divider {
-  border: none;
-  border-top: 1px solid var(--border);
-}
+footer { text-align: center; padding: 32px 40px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .analogy-grid { grid-template-columns: 1fr; }
-  .steps-content { grid-template-columns: 1fr; }
+  .step-panel-wrap.active { grid-template-columns: 1fr; }
   .usecases-grid { grid-template-columns: 1fr; }
   nav ul { display: none; }
+  .hamburger { display: flex; }
   .hero h1 { letter-spacing: -1px; }
   .section { padding: 60px 20px; }
   nav { padding: 16px 20px; }
@@ -583,14 +652,29 @@ footer {
   .usecase-card { padding: 24px; }
   .analogy-two-col { grid-template-columns: 1fr !important; gap: 24px !important; padding: 24px !important; }
   .analogy-two-col h3 { font-size: 18px !important; }
+  .hero-stats { gap: 24px; }
+  body { cursor: auto; }
+  .cursor-dot, .cursor-ring { display: none; }
+  .back-top { bottom: 20px; right: 20px; }
+  nav .btn-primary { display: none; }
 }
 </style>
 </head>
 <body>
 
+<!-- Custom cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Scroll progress -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- Back to top -->
+<a href="#" class="back-top" id="backTop">↑</a>
+
 <!-- NAV -->
-<nav>
-  <div class="logo">Priva<span>Train</span></div>
+<nav id="mainNav">
+  <a href="#" class="logo">Priva<span>Train</span></a>
   <ul>
     <li><a href="#problem">The Problem</a></li>
     <li><a href="#how">How It Works</a></li>
@@ -600,56 +684,89 @@ footer {
     <li><a href="#contact">Contact</a></li>
   </ul>
   <a href="#contact" class="btn-primary" style="font-size:13px;padding:10px 20px;">Request Access</a>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#problem" onclick="closeMobile()">The Problem</a>
+  <a href="#how" onclick="closeMobile()">How It Works</a>
+  <a href="#usecases" onclick="closeMobile()">Use Cases</a>
+  <a href="#compare" onclick="closeMobile()">Compare</a>
+  <a href="#faq" onclick="closeMobile()">FAQ</a>
+  <a href="#contact" onclick="closeMobile()">Contact</a>
+  <a href="#contact" class="btn-primary" style="text-align:center;margin-top:8px;" onclick="closeMobile()">Request Access</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
+  <canvas id="heroCanvas"></canvas>
   <div class="hero-glow"></div>
   <div class="badge"><span class="badge-dot"></span>Private AI Platform</div>
   <h1>Your Data Stays Yours.<br>Your AI Gets <em>Smarter</em>.</h1>
-  <p>PrivaTrain lets hospitals, law firms, and businesses train AI models on their sensitive data — privately, locally, with a system that continuously improves itself.</p>
+  <p>PrivaTrain lets hospitals, law firms, and businesses train AI models on their sensitive data — privately, with a system that continuously improves itself.</p>
   <div class="hero-cta">
     <a href="#how" class="btn-primary">See How It Works</a>
     <a href="#usecases" class="btn-secondary">View Use Cases</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-num" data-count="100">0</span>
+      <div class="stat-label">% data private</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="5">0</span>
+      <div class="stat-label">autonomous agents</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="4" data-prefix="$" data-suffix="+">0</span>
+      <div class="stat-label">per training job</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="0" data-label="zero">0</span>
+      <div class="stat-label">data stored on servers</div>
+    </div>
   </div>
 </section>
 
 <!-- PROBLEM -->
 <section id="problem" class="section">
-  <div class="section-label">The Problem</div>
-  <h2>AI is powerful.<br>But your data is sensitive.</h2>
-  <p class="lead">When you use ChatGPT or Claude with real business data — patient records, legal documents, financial reports — you're sending that data to someone else's servers. For many industries, that's not just risky. It's illegal.</p>
+  <div class="section-label reveal">The Problem</div>
+  <h2 class="reveal">AI is powerful.<br>But your data is sensitive.</h2>
+  <p class="lead reveal">When you use ChatGPT or Claude with real business data — patient records, legal documents, financial reports — you're sending that data to someone else's servers. For many industries, that's not just risky. It's illegal.</p>
 
   <div class="analogy-grid" style="margin-top:48px;">
-    <div class="analogy-card">
+    <div class="analogy-card reveal">
       <div class="icon" style="background:var(--teal-dim);">🏥</div>
       <h3>A hospital can't use cloud AI</h3>
       <p>HIPAA regulations mean patient records cannot be sent to external servers. One breach = millions in fines and loss of patient trust.</p>
     </div>
-    <div class="analogy-card">
+    <div class="analogy-card reveal" style="transition-delay:0.1s;">
       <div class="icon" style="background:var(--purple-dim);">⚖️</div>
       <h3>A law firm can't share case files</h3>
       <p>Attorney-client privilege means confidential case documents cannot leave the firm's control — ever. Bar association rules make this non-negotiable.</p>
     </div>
-    <div class="analogy-card">
+    <div class="analogy-card reveal" style="transition-delay:0.2s;">
       <div class="icon" style="background:var(--amber-dim);">🏦</div>
       <h3>A bank can't expose financial data</h3>
       <p>Internal financial models, client portfolios, and trading strategies are market-sensitive. Sending them to a third-party AI is a compliance nightmare.</p>
     </div>
   </div>
 
-  <div class="analogy-two-col" style="margin-top:48px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;">
+  <div class="analogy-two-col reveal" style="margin-top:48px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;">
     <div>
       <div style="font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;">Simple analogy</div>
       <h3 style="font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:12px;">Think of it like hiring a specialist vs. asking a stranger</h3>
       <p style="font-size:14px;color:var(--muted);">Using ChatGPT for sensitive data is like explaining your confidential business problem loudly in a public café. PrivaTrain is like hiring a dedicated expert who works exclusively for you, inside your office, who gets better at your specific problems every day — and never tells anyone else what they know.</p>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px;">
+      <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:16px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
         <div style="font-size:12px;font-weight:600;color:var(--coral);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">❌ Cloud AI Problem</div>
         <p style="font-size:13px;color:var(--muted);">Your sensitive data leaves your building, goes through the internet, and is processed on someone else's computer. You have no idea what happens to it.</p>
       </div>
-      <div style="background:var(--teal-dim);border:1px solid rgba(45,212,191,0.2);border-radius:10px;padding:16px;">
+      <div style="background:var(--teal-dim);border:1px solid rgba(45,212,191,0.2);border-radius:10px;padding:16px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
         <div style="font-size:12px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">✅ PrivaTrain Solution</div>
         <p style="font-size:13px;color:var(--muted);">The AI model comes to your data. Training happens in an encrypted container. Only the trained model (not your data) is returned to you.</p>
       </div>
@@ -660,11 +777,11 @@ footer {
 <!-- HOW IT WORKS -->
 <section id="how" class="pipeline-section">
   <div class="section" style="padding-top:80px;padding-bottom:80px;">
-    <div class="section-label">How It Works</div>
-    <h2>From raw data to a<br>self-improving AI model</h2>
-    <p class="lead" style="margin-bottom:40px;">PrivaTrain's five-agent pipeline handles everything automatically. No ML degree required.</p>
+    <div class="section-label reveal">How It Works</div>
+    <h2 class="reveal">From raw data to a<br>self-improving AI model</h2>
+    <p class="lead reveal" style="margin-bottom:40px;">PrivaTrain's five-agent pipeline handles everything automatically. No ML degree required.</p>
 
-    <div class="steps-nav" id="stepsNav">
+    <div class="steps-nav reveal" id="stepsNav">
       <button class="step-btn active" onclick="showStep(0)">1. Upload data</button>
       <button class="step-btn" onclick="showStep(1)">2. Score & prioritise</button>
       <button class="step-btn" onclick="showStep(2)">3. Smart mixing</button>
@@ -673,142 +790,89 @@ footer {
       <button class="step-btn" onclick="showStep(5)">6. Self-improve</button>
     </div>
 
-    <div class="steps-content" id="stepsContent">
-
-      <!-- STEP 0: Upload -->
-      <div class="step-panel active" id="step-0">
+    <div style="display:grid;">
+      <div class="step-panel-wrap active" id="step-0">
         <div class="step-info">
           <h3>Upload any data in any format</h3>
-          <p>Drop in PDFs, spreadsheets, Word documents, emails, images — PrivaTrain automatically converts them into a format the AI can learn from. No technical preparation needed.</p>
+          <p>Drop in PDFs, spreadsheets, Word documents, emails, images — PrivaTrain automatically converts them into a format the AI can learn from.</p>
           <div class="step-detail" style="border-color:var(--teal);">
-            <strong style="color:var(--teal);">What happens under the hood:</strong> Your documents are chunked, converted to training examples, and stored locally on your machine. Nothing is uploaded to PrivaTrain servers at this stage.
+            <strong style="color:var(--teal);">What happens under the hood:</strong> Your documents are chunked, converted to training examples, and stored locally. Nothing is uploaded to PrivaTrain servers at this stage.
           </div>
         </div>
         <div class="step-visual">
           <div style="margin-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Document ingestion</div>
-          <div id="uploadAnim">
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(45,212,191,0.07);border:1px solid rgba(45,212,191,0.2);border-radius:8px;margin-bottom:8px;font-size:13px;">
-              <span>📄</span><span style="flex:1;color:var(--text);">patient_records_Q3.pdf</span><span style="color:var(--teal);">✓ 847 examples</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(45,212,191,0.07);border:1px solid rgba(45,212,191,0.2);border-radius:8px;margin-bottom:8px;font-size:13px;">
-              <span>📊</span><span style="flex:1;color:var(--text);">lab_results_2024.xlsx</span><span style="color:var(--teal);">✓ 1,203 examples</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(45,212,191,0.07);border:1px solid rgba(45,212,191,0.2);border-radius:8px;margin-bottom:8px;font-size:13px;">
-              <span>📝</span><span style="flex:1;color:var(--text);">clinical_notes_oct.docx</span><span style="color:var(--teal);">✓ 2,114 examples</span>
-            </div>
-            <div style="margin-top:20px;padding:14px;background:var(--bg3);border-radius:8px;">
-              <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Total training examples generated</div>
-              <div style="font-size:28px;font-family:'Syne',sans-serif;font-weight:700;color:var(--teal);">4,164</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:4px;">Ready for scoring pipeline</div>
-            </div>
+          <div id="fileList"></div>
+          <div style="margin-top:20px;padding:14px;background:var(--bg3);border-radius:8px;">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Total training examples generated</div>
+            <div style="font-size:28px;font-family:'Syne',sans-serif;font-weight:700;color:var(--teal);" id="exampleCount">0</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Ready for scoring pipeline</div>
           </div>
         </div>
       </div>
 
-      <!-- STEP 1: Score -->
-      <div class="step-panel" id="step-1">
+      <div class="step-panel-wrap" id="step-1">
         <div class="step-info">
           <h3>Every example gets a priority score</h3>
-          <p>Before training begins, a scoring system analyses each piece of data and decides how valuable it is. This prevents wasting compute on data the model already knows, and flags contradictions before they cause problems.</p>
+          <p>Before training begins, a scoring system analyses each piece of data and decides how valuable it is. Contradictions are flagged before they cause problems.</p>
           <div class="step-detail" style="border-color:var(--purple);">
-            <strong style="color:var(--purple);">Why this matters:</strong> Without scoring, you might retrain on 1,000 examples the model already handles perfectly. That wastes GPU time and money. Only high-priority examples trigger training.
+            <strong style="color:var(--purple);">Why this matters:</strong> Without scoring, you might retrain on 1,000 examples the model already handles perfectly — wasting GPU time and money.
           </div>
         </div>
         <div class="step-visual">
           <div style="margin-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Scoring analysis</div>
-          <div class="score-row">
-            <div class="score-label">Novelty</div>
-            <div class="score-bar-bg"><div class="score-bar" style="width:82%;background:var(--teal);"></div></div>
-            <div class="score-val">0.82</div>
-          </div>
-          <div class="score-row">
-            <div class="score-label">Coverage gap</div>
-            <div class="score-bar-bg"><div class="score-bar" style="width:71%;background:var(--purple);"></div></div>
-            <div class="score-val">0.71</div>
-          </div>
-          <div class="score-row">
-            <div class="score-label">Confidence error</div>
-            <div class="score-bar-bg"><div class="score-bar" style="width:91%;background:var(--amber);"></div></div>
-            <div class="score-val">0.91</div>
-          </div>
-          <div class="score-row">
-            <div class="score-label">Contradiction</div>
-            <div class="score-bar-bg"><div class="score-bar" style="width:12%;background:var(--coral);"></div></div>
-            <div class="score-val">0.12</div>
-          </div>
+          <div class="score-row"><div class="score-label">Novelty</div><div class="score-bar-bg"><div class="score-bar" data-width="82" style="background:var(--teal);"></div></div><div class="score-val">0.82</div></div>
+          <div class="score-row"><div class="score-label">Coverage gap</div><div class="score-bar-bg"><div class="score-bar" data-width="71" style="background:var(--purple);"></div></div><div class="score-val">0.71</div></div>
+          <div class="score-row"><div class="score-label">Confidence error</div><div class="score-bar-bg"><div class="score-bar" data-width="91" style="background:var(--amber);"></div></div><div class="score-val">0.91</div></div>
+          <div class="score-row"><div class="score-label">Contradiction</div><div class="score-bar-bg"><div class="score-bar" data-width="12" style="background:var(--coral);"></div></div><div class="score-val">0.12</div></div>
           <div style="margin-top:20px;display:flex;gap:8px;align-items:center;background:var(--bg3);border-radius:8px;padding:14px;">
-            <div style="width:10px;height:10px;background:var(--teal);border-radius:50%;flex-shrink:0;"></div>
-            <div style="font-size:13px;color:var(--muted);">Recommendation: <span style="color:var(--text);">High priority — proceed to training. 3 contradictions flagged for review.</span></div>
+            <div style="width:10px;height:10px;background:var(--teal);border-radius:50%;flex-shrink:0;animation:pulse 2s infinite;"></div>
+            <div style="font-size:13px;color:var(--muted);">Recommendation: <span style="color:var(--text);">High priority — proceed to training. 3 contradictions flagged.</span></div>
           </div>
         </div>
       </div>
 
-      <!-- STEP 2: Mixing -->
-      <div class="step-panel" id="step-2">
+      <div class="step-panel-wrap" id="step-2">
         <div class="step-info">
           <h3>Old and new data get blended intelligently</h3>
-          <p>AI has a problem called "catastrophic forgetting" — if you train it only on new data, it forgets everything it learned before. PrivaTrain mixes old and new data in the right proportions automatically.</p>
+          <p>AI has a problem called "catastrophic forgetting" — training only on new data makes it forget everything it learned before. PrivaTrain mixes data in the right proportions automatically.</p>
           <div class="step-detail" style="border-color:var(--amber);">
-            <strong style="color:var(--amber);">Simple analogy:</strong> Imagine learning French but forgetting all your English. That's catastrophic forgetting. The data mixer makes sure the AI keeps what it knew while learning what's new.
+            <strong style="color:var(--amber);">Simple analogy:</strong> Imagine learning French but forgetting all your English. The data mixer prevents that.
           </div>
         </div>
         <div class="step-visual">
           <div style="margin-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Data mix recipe</div>
-          <div style="display:flex;height:40px;border-radius:8px;overflow:hidden;margin-bottom:16px;">
-            <div style="width:65%;background:rgba(96,165,250,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--blue);">65% existing knowledge</div>
-            <div style="width:35%;background:rgba(45,212,191,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--teal);">35% new data</div>
+          <div style="display:flex;height:40px;border-radius:8px;overflow:hidden;margin-bottom:16px;position:relative;" id="mixBar">
+            <div style="width:0%;background:rgba(96,165,250,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--blue);transition:width 1s ease;overflow:hidden;white-space:nowrap;padding:0 8px;">65% existing</div>
+            <div style="width:0%;background:rgba(45,212,191,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--teal);transition:width 1s 0.3s ease;overflow:hidden;white-space:nowrap;padding:0 8px;">35% new</div>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Ratio automatically adjusted based on dataset size and coverage gaps</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px;display:flex;justify-content:space-between;">
-              <span style="color:var(--muted);">Existing training samples</span>
-              <span style="color:var(--text);">8,240</span>
-            </div>
-            <div style="padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px;display:flex;justify-content:space-between;">
-              <span style="color:var(--muted);">New high-priority samples</span>
-              <span style="color:var(--teal);">4,164</span>
-            </div>
-            <div style="padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px;display:flex;justify-content:space-between;">
-              <span style="color:var(--muted);">Final training batch size</span>
-              <span style="color:var(--text);">7,680</span>
-            </div>
+            <div style="padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px;display:flex;justify-content:space-between;"><span style="color:var(--muted);">Existing training samples</span><span style="color:var(--text);">8,240</span></div>
+            <div style="padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px;display:flex;justify-content:space-between;"><span style="color:var(--muted);">New high-priority samples</span><span style="color:var(--teal);">4,164</span></div>
+            <div style="padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px;display:flex;justify-content:space-between;"><span style="color:var(--muted);">Final training batch</span><span style="color:var(--text);">7,680</span></div>
           </div>
         </div>
       </div>
 
-      <!-- STEP 3: Train -->
-      <div class="step-panel" id="step-3">
+      <div class="step-panel-wrap" id="step-3">
         <div class="step-info">
           <h3>Training runs on rented GPUs — privately</h3>
-          <p>Your encrypted training job is sent to a GPU cloud provider. Your raw data never leaves your machine — only the encrypted job payload does. The trained model weights are returned to you.</p>
+          <p>Your encrypted training job is sent to a GPU cloud provider. Raw data never leaves your machine. The trained model weights are returned to you.</p>
           <div class="step-detail" style="border-color:var(--blue);">
-            <strong style="color:var(--blue);">Why GPU rental?</strong> Training AI requires powerful graphics cards that most businesses don't own. Renting GPU time costs $2–15 per training job — far cheaper than buying hardware.
+            <strong style="color:var(--blue);">Why GPU rental?</strong> Training AI requires powerful graphics cards most businesses don't own. Renting costs $2–15 per job — far cheaper than buying hardware.
           </div>
         </div>
         <div class="step-visual">
           <div style="margin-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Training job — live</div>
-          <div class="terminal">
-            <div class="t-line"><span class="t-prompt">▸ </span><span class="t-cmd">Starting LoRA fine-tune job #4821</span></div>
-            <div class="t-line"><span class="t-out">  Base model: Llama-3.2-7B-Instruct</span></div>
-            <div class="t-line"><span class="t-out">  GPU: NVIDIA A100 80GB (RunPod)</span></div>
-            <div class="t-line"><span class="t-out">  Batch: 7,680 examples · 3 epochs</span></div>
-            <div class="t-line" style="margin-top:8px;"><span class="t-out">  [████████████░░░░] Epoch 1/3 — loss: 0.341</span></div>
-            <div class="t-line"><span class="t-ok">  ✓ Epoch 2/3 — loss: 0.198 ↓</span></div>
-            <div class="t-line"><span class="t-ok">  ✓ Epoch 3/3 — loss: 0.147 ↓</span></div>
-            <div class="t-line" style="margin-top:8px;"><span class="t-ok">✓ Training complete · 38 min · $4.20</span></div>
-            <div class="t-line"><span class="t-out">  Returning model weights to user...</span></div>
-            <div class="t-line"><span class="t-warn">  Raw data: never stored · Container: destroyed</span></div>
-          </div>
+          <div class="terminal" id="terminalOutput"></div>
         </div>
       </div>
 
-      <!-- STEP 4: Evaluate -->
-      <div class="step-panel" id="step-4">
+      <div class="step-panel-wrap" id="step-4">
         <div class="step-info">
           <h3>New model must prove it's better</h3>
-          <p>Before your current model is replaced, the new one is put through a set of benchmark tests. If it scores better, it gets deployed. If not, it's blocked and the diagnostician explains what went wrong.</p>
+          <p>Before your current model is replaced, the new one runs benchmark tests. If it scores better, it gets deployed. If not, it's blocked and the diagnostician explains what went wrong.</p>
           <div class="step-detail" style="border-color:var(--coral);">
-            <strong style="color:var(--coral);">Why this matters:</strong> Without evaluation, a bad training run could silently make your model worse. No other fine-tuning tool has this automatic safety gate built in.
+            <strong style="color:var(--coral);">Why this matters:</strong> Without evaluation, a bad training run could silently make your model worse. No other fine-tuning tool has this gate built in.
           </div>
         </div>
         <div class="step-visual">
@@ -816,12 +880,12 @@ footer {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
             <div style="padding:14px;background:var(--bg3);border-radius:8px;text-align:center;">
               <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Old model</div>
-              <div style="font-size:26px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text);">74.2%</div>
+              <div style="font-size:26px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text);" id="oldScore">0%</div>
               <div style="font-size:11px;color:var(--muted);">accuracy</div>
             </div>
             <div style="padding:14px;background:rgba(45,212,191,0.07);border:1px solid rgba(45,212,191,0.2);border-radius:8px;text-align:center;">
               <div style="font-size:11px;color:var(--teal);margin-bottom:4px;">New model</div>
-              <div style="font-size:26px;font-family:'Syne',sans-serif;font-weight:700;color:var(--teal);">88.7%</div>
+              <div style="font-size:26px;font-family:'Syne',sans-serif;font-weight:700;color:var(--teal);" id="newScore">0%</div>
               <div style="font-size:11px;color:var(--teal);">accuracy</div>
             </div>
           </div>
@@ -835,61 +899,41 @@ footer {
         </div>
       </div>
 
-      <!-- STEP 5: Loop -->
-      <div class="step-panel" id="step-5">
+      <div class="step-panel-wrap" id="step-5">
         <div class="step-info">
           <h3>Every use makes the model smarter</h3>
-          <p>When users mark an answer as wrong, or correct the model, that feedback is logged. Over time the platform identifies patterns in failures, collects enough new signal, and automatically triggers the pipeline again — making the model better without anyone pressing a button.</p>
+          <p>When users mark an answer as wrong, that feedback is logged. The platform identifies failure patterns, collects enough signal, and automatically triggers the pipeline again — no button needed.</p>
           <div class="step-detail" style="border-color:var(--purple);">
-            <strong style="color:var(--purple);">This is the agentic loop:</strong> The model monitors its own performance, decides when retraining is worthwhile, and improves itself. No competitor offers this for private local AI.
+            <strong style="color:var(--purple);">This is the agentic loop:</strong> The model monitors its own performance and improves itself. No competitor offers this for private local AI.
           </div>
         </div>
         <div class="step-visual">
           <div style="margin-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Self-improvement activity</div>
-          <div class="agent-row">
-            <div class="agent-dot" style="background:#4ade80;box-shadow:0 0 6px #4ade80;"></div>
-            <div class="agent-name" style="font-size:13px;">Data gate</div>
-            <div class="agent-status" style="background:rgba(74,222,128,0.1);color:#4ade80;">monitoring</div>
-          </div>
-          <div class="agent-row">
-            <div class="agent-dot" style="background:var(--teal);box-shadow:0 0 6px var(--teal);"></div>
-            <div class="agent-name" style="font-size:13px;">Scoring engine</div>
-            <div class="agent-status" style="background:var(--teal-dim);color:var(--teal);">scoring 142 new examples</div>
-          </div>
-          <div class="agent-row">
-            <div class="agent-dot" style="background:var(--amber);"></div>
-            <div class="agent-name" style="font-size:13px;">Trainer</div>
-            <div class="agent-status" style="background:var(--amber-dim);color:var(--amber);">waiting — need 300+ more</div>
-          </div>
-          <div class="agent-row">
-            <div class="agent-dot" style="background:var(--muted);"></div>
-            <div class="agent-name" style="font-size:13px;">Evaluator</div>
-            <div class="agent-status" style="background:rgba(255,255,255,0.05);color:var(--muted);">idle</div>
-          </div>
+          <div class="agent-row"><div class="agent-dot live" style="background:#4ade80;color:#4ade80;"></div><div class="agent-name" style="font-size:13px;">Data gate</div><div class="agent-status" style="background:rgba(74,222,128,0.1);color:#4ade80;">monitoring</div></div>
+          <div class="agent-row"><div class="agent-dot live" style="background:var(--teal);color:var(--teal);"></div><div class="agent-name" style="font-size:13px;">Scoring engine</div><div class="agent-status" style="background:var(--teal-dim);color:var(--teal);">scoring 142 new examples</div></div>
+          <div class="agent-row"><div class="agent-dot" style="background:var(--amber);"></div><div class="agent-name" style="font-size:13px;">Trainer</div><div class="agent-status" style="background:var(--amber-dim);color:var(--amber);">waiting — need 300+ more</div></div>
+          <div class="agent-row"><div class="agent-dot" style="background:var(--muted);"></div><div class="agent-name" style="font-size:13px;">Evaluator</div><div class="agent-status" style="background:rgba(255,255,255,0.05);color:var(--muted);">idle</div></div>
           <div style="margin-top:16px;padding:12px 14px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--muted);">
-            Next automatic retraining estimated when 300 more corrections are logged — approximately <span style="color:var(--text);">4 days</span> at current usage rate.
+            Next retraining in approximately <span style="color:var(--text);">4 days</span> at current usage rate.
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
 <!-- USE CASES -->
 <section id="usecases" class="section">
-  <div class="section-label">Use Cases</div>
-  <h2>Built for industries where<br>privacy isn't optional</h2>
-  <p class="lead">Real scenarios where PrivaTrain solves a problem that cloud AI legally cannot.</p>
+  <div class="section-label reveal">Use Cases</div>
+  <h2 class="reveal">Built for industries where<br>privacy isn't optional</h2>
+  <p class="lead reveal">Real scenarios where PrivaTrain solves a problem that cloud AI legally cannot.</p>
 
   <div class="usecases-grid">
-
-    <!-- Healthcare -->
-    <div class="usecase-card healthcare">
+    <div class="usecase-card healthcare reveal">
       <div class="uc-icon" style="background:var(--teal-dim);">🏥</div>
       <div class="industry" style="color:var(--teal);">Healthcare</div>
       <h3>Medical record analysis</h3>
-      <p>A hospital fine-tunes a model on their own patient notes, lab results, and clinical guidelines. The model learns to answer questions in their specific format and terminology — and gets better the more doctors use it.</p>
+      <p>A hospital fine-tunes a model on their own patient notes, lab results, and clinical guidelines. It learns their specific format and terminology — and gets better the more doctors use it.</p>
       <div class="scenario">
         <div class="scenario-title">Example interaction</div>
         <div class="scenario-msg">Dr. Chen asks: "Summarise the medication history for Patient 4821 and flag any interactions with the new prescription."</div>
@@ -901,66 +945,63 @@ footer {
       <div class="privacy-badge">🔒 Patient data never left the hospital</div>
     </div>
 
-    <!-- Legal -->
-    <div class="usecase-card legal">
+    <div class="usecase-card legal reveal" style="transition-delay:0.1s;">
       <div class="uc-icon" style="background:var(--purple-dim);">⚖️</div>
       <div class="industry" style="color:var(--purple);">Legal</div>
       <h3>Contract review assistant</h3>
-      <p>A law firm trains a model on 10 years of their own contract templates, case outcomes, and internal legal opinions. The model learns the firm's specific drafting style and flags non-standard clauses automatically.</p>
+      <p>A law firm trains a model on 10 years of their own contract templates, case outcomes, and internal legal opinions. It flags non-standard clauses automatically.</p>
       <div class="scenario">
         <div class="scenario-title">Example interaction</div>
         <div class="scenario-msg">Associate asks: "Does this NDA clause match our standard language? Flag any deviations."</div>
         <div class="scenario-reply" style="background:var(--purple-dim);border:1px solid rgba(167,139,250,0.2);">
           <span style="font-size:11px;font-weight:600;color:var(--purple);display:block;margin-bottom:4px;">PRIVTRAIN (trained on firm's contracts)</span>
-          <span style="font-size:13px;color:var(--muted);">3 deviations from your standard NDA: (1) Jurisdiction is Delaware, your standard is New York. (2) Liquidated damages clause absent — you typically include this. (3) IP assignment scope is broader than your template...</span>
+          <span style="font-size:13px;color:var(--muted);">3 deviations from your standard NDA: (1) Jurisdiction is Delaware, your standard is New York. (2) Liquidated damages clause absent. (3) IP assignment scope is broader than your template...</span>
         </div>
       </div>
       <div class="privacy-badge">🔒 Client files never left the firm</div>
     </div>
 
-    <!-- Finance -->
-    <div class="usecase-card finance">
+    <div class="usecase-card finance reveal" style="transition-delay:0.15s;">
       <div class="uc-icon" style="background:var(--amber-dim);">📈</div>
       <div class="industry" style="color:var(--amber);">Finance</div>
       <h3>Internal report intelligence</h3>
-      <p>A hedge fund trains a model on years of their own analyst reports, investment theses, and internal research. The model learns their specific framework for evaluating companies and assists with new analysis.</p>
+      <p>A hedge fund trains a model on their own analyst reports, investment theses, and internal research. It learns their specific framework for evaluating companies.</p>
       <div class="scenario">
         <div class="scenario-title">Example interaction</div>
         <div class="scenario-msg">Analyst asks: "Apply our Q-score framework to this semiconductor company's latest 10-K."</div>
         <div class="scenario-reply" style="background:var(--amber-dim);border:1px solid rgba(245,158,11,0.2);">
           <span style="font-size:11px;font-weight:600;color:var(--amber);display:block;margin-bottom:4px;">PRIVTRAIN (trained on fund's methodology)</span>
-          <span style="font-size:13px;color:var(--muted);">Q-score: 7.4/10. Revenue quality: strong (recurring contracts 68% of revenue). Margin trajectory: improving but below your 40% threshold. Capital allocation: consistent with your preferred buyback strategy...</span>
+          <span style="font-size:13px;color:var(--muted);">Q-score: 7.4/10. Revenue quality: strong (recurring contracts 68%). Margin trajectory: improving but below your 40% threshold. Capital allocation: consistent with your preferred buyback strategy...</span>
         </div>
       </div>
       <div class="privacy-badge">🔒 Proprietary methodology never shared</div>
     </div>
 
-    <!-- Manufacturing -->
-    <div class="usecase-card manufacturing">
+    <div class="usecase-card manufacturing reveal" style="transition-delay:0.2s;">
       <div class="uc-icon" style="background:var(--coral-dim);">🏭</div>
       <div class="industry" style="color:var(--coral);">Manufacturing</div>
       <h3>Equipment fault diagnosis</h3>
-      <p>A factory trains an image detection model on photos of their specific machinery defects. The model learns what "normal" looks like for their equipment and flags anomalies in real time on the production line.</p>
+      <p>A factory trains an image detection model on photos of their specific machinery defects. It learns what "normal" looks like and flags anomalies in real time on the production line.</p>
       <div class="scenario">
         <div class="scenario-title">Example interaction</div>
         <div class="scenario-msg">QA system sends: [Live camera feed from CNC Machine #7]</div>
         <div class="scenario-reply" style="background:var(--coral-dim);border:1px solid rgba(248,113,113,0.2);">
           <span style="font-size:11px;font-weight:600;color:var(--coral);display:block;margin-bottom:4px;">PRIVTRAIN (trained on plant's defect library)</span>
-          <span style="font-size:13px;color:var(--muted);">⚠️ Surface anomaly detected on workpiece — matches Category 3 micro-fracture pattern from your defect library. Confidence: 94.2%. Recommend stopping Machine #7. Similar defect on this machine 47 days ago (Batch #2291)...</span>
+          <span style="font-size:13px;color:var(--muted);">⚠️ Surface anomaly detected — matches Category 3 micro-fracture pattern. Confidence: 94.2%. Recommend stopping Machine #7. Similar defect 47 days ago (Batch #2291)...</span>
         </div>
       </div>
       <div class="privacy-badge">🔒 Production IP stays on-premise</div>
     </div>
-
   </div>
 </section>
 
 <!-- COMPARE -->
 <section id="compare" class="section" style="padding-top:0;">
   <hr class="divider" style="margin-bottom:80px;">
-  <div class="section-label">Comparison</div>
-  <h2>How PrivaTrain stacks up</h2>
-  <p class="lead">Against the tools that exist today.</p>
+  <div class="section-label reveal">Comparison</div>
+  <h2 class="reveal">How PrivaTrain stacks up</h2>
+  <p class="lead reveal">Against the tools that exist today.</p>
+  <div class="reveal">
   <table class="compare-table">
     <thead>
       <tr>
@@ -972,96 +1013,31 @@ footer {
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td class="feature-col">Data stays private</td>
-        <td><span class="cross">✗</span> Sent to cloud</td>
-        <td><span class="check">✓</span> Local</td>
-        <td><span class="cross">✗</span> Sent to HF</td>
-        <td class="ours"><span class="check">✓</span> Encrypted local</td>
-      </tr>
-      <tr>
-        <td class="feature-col">Fine-tune on your data</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="check">✓</span> Yes</td>
-        <td class="ours"><span class="check">✓</span> Yes</td>
-      </tr>
-      <tr>
-        <td class="feature-col">No-code interface</td>
-        <td><span class="check">✓</span> Yes</td>
-        <td><span class="cross">✗</span> CLI only</td>
-        <td><span class="partial">~</span> Partial</td>
-        <td class="ours"><span class="check">✓</span> Yes</td>
-      </tr>
-      <tr>
-        <td class="feature-col">Continuous self-improvement</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td class="ours"><span class="check">✓</span> <strong style="color:var(--teal);">Core feature</strong></td>
-      </tr>
-      <tr>
-        <td class="feature-col">Evaluation before deploy</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td class="ours"><span class="check">✓</span> Auto-benchmark</td>
-      </tr>
-      <tr>
-        <td class="feature-col">Failure diagnosis</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="cross">✗</span> No</td>
-        <td class="ours"><span class="check">✓</span> Plain English</td>
-      </tr>
-      <tr>
-        <td class="feature-col">Currently maintained</td>
-        <td><span class="check">✓</span> Yes</td>
-        <td><span class="check">✓</span> Yes</td>
-        <td><span class="cross">✗</span> <strong>Abandoned 2024</strong></td>
-        <td class="ours"><span class="check">✓</span> Yes</td>
-      </tr>
-      <tr>
-        <td class="feature-col">HIPAA / legal friendly</td>
-        <td><span class="cross">✗</span> No</td>
-        <td><span class="partial">~</span> If self-hosted</td>
-        <td><span class="cross">✗</span> No</td>
-        <td class="ours"><span class="check">✓</span> By design</td>
-      </tr>
+      <tr><td class="feature-col">Data stays private</td><td><span class="cross">✗</span> Sent to cloud</td><td><span class="check">✓</span> Local</td><td><span class="cross">✗</span> Sent to HF</td><td class="ours"><span class="check">✓</span> Encrypted local</td></tr>
+      <tr><td class="feature-col">Fine-tune on your data</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td><span class="check">✓</span> Yes</td><td class="ours"><span class="check">✓</span> Yes</td></tr>
+      <tr><td class="feature-col">No-code interface</td><td><span class="check">✓</span> Yes</td><td><span class="cross">✗</span> CLI only</td><td><span class="partial">~</span> Partial</td><td class="ours"><span class="check">✓</span> Yes</td></tr>
+      <tr><td class="feature-col">Continuous self-improvement</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td class="ours"><span class="check">✓</span> <strong style="color:var(--teal);">Core feature</strong></td></tr>
+      <tr><td class="feature-col">Evaluation before deploy</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td class="ours"><span class="check">✓</span> Auto-benchmark</td></tr>
+      <tr><td class="feature-col">Failure diagnosis</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td><span class="cross">✗</span> No</td><td class="ours"><span class="check">✓</span> Plain English</td></tr>
+      <tr><td class="feature-col">Currently maintained</td><td><span class="check">✓</span> Yes</td><td><span class="check">✓</span> Yes</td><td><span class="cross">✗</span> <strong>Abandoned 2024</strong></td><td class="ours"><span class="check">✓</span> Yes</td></tr>
+      <tr><td class="feature-col">HIPAA / legal friendly</td><td><span class="cross">✗</span> No</td><td><span class="partial">~</span> If self-hosted</td><td><span class="cross">✗</span> No</td><td class="ours"><span class="check">✓</span> By design</td></tr>
     </tbody>
   </table>
+  </div>
 </section>
 
 <!-- FAQ -->
 <section id="faq" class="section" style="padding-top:0;">
   <hr class="divider" style="margin-bottom:80px;">
-  <div class="section-label">FAQ</div>
-  <h2>Common questions</h2>
-  <div class="faq-list">
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">What is AI fine-tuning, in simple terms?</button>
-      <div class="faq-a"><div class="faq-a-inner">Fine-tuning is teaching an existing AI model your specific language, terminology, and way of doing things. Think of it like hiring someone who already knows how to cook — fine-tuning is the training shift in your specific kitchen, with your specific menu. The base knowledge stays, but now they know your recipes exactly.</div></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">Do I need a computer science background to use this?</button>
-      <div class="faq-a"><div class="faq-a-inner">No. PrivaTrain is built specifically for professionals in medicine, law, and finance — not ML engineers. You upload documents, pick a task type, and the platform handles everything else. The feedback system works like leaving a thumbs up or down on a reply.</div></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">How do I know my data is actually private?</button>
-      <div class="faq-a"><div class="faq-a-inner">Your raw data is encrypted on your machine before anything is sent anywhere. Training happens in an isolated container that is destroyed after the job completes. PrivaTrain servers never store your raw data — only encrypted training job payloads are transmitted. The model weights (not your data) are returned to you. We use GPU cloud providers with SOC2 compliance certifications for any processing.</div></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">How much does training cost?</button>
-      <div class="faq-a"><div class="faq-a-inner">Training costs depend on dataset size and model size. Typical fine-tuning jobs range from $2 to $20 per run. Most users retrain once every few weeks as new data accumulates. There's also a platform subscription fee. The agentic system is designed to only trigger retraining when it's genuinely worthwhile — saving you money on unnecessary compute.</div></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">What happens if the new trained model is worse than the old one?</button>
-      <div class="faq-a"><div class="faq-a-inner">It never gets deployed. The evaluation agent runs the new model against a benchmark test before anything is switched. If the new model scores lower, the old one stays in place and the diagnostician agent tells you exactly what went wrong — not technical jargon, but a plain explanation like "your new data contained conflicting examples about X, here's which ones."</div></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">What types of AI tasks does PrivaTrain support?</button>
-      <div class="faq-a"><div class="faq-a-inner">The model marketplace includes base models for: document Q&A and summarisation, text classification and routing, image and visual inspection, named entity recognition (pulling names, dates, figures from documents), and conversational assistants trained on your knowledge base. More task types are added regularly.</div></div>
-    </div>
+  <div class="section-label reveal">FAQ</div>
+  <h2 class="reveal">Common questions</h2>
+  <div class="faq-list reveal">
+    <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">What is AI fine-tuning, in simple terms?</button><div class="faq-a"><div class="faq-a-inner">Fine-tuning is teaching an existing AI model your specific language, terminology, and way of doing things. Think of it like hiring someone who already knows how to cook — fine-tuning is the training shift in your specific kitchen, with your specific menu. The base knowledge stays, but now they know your recipes exactly.</div></div></div>
+    <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Do I need a computer science background to use this?</button><div class="faq-a"><div class="faq-a-inner">No. PrivaTrain is built specifically for professionals in medicine, law, and finance — not ML engineers. You upload documents, pick a task type, and the platform handles everything else. The feedback system works like leaving a thumbs up or down on a reply.</div></div></div>
+    <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">How do I know my data is actually private?</button><div class="faq-a"><div class="faq-a-inner">Your raw data is encrypted on your machine before anything is sent anywhere. Training happens in an isolated container that is destroyed after the job completes. PrivaTrain servers never store your raw data — only encrypted training job payloads are transmitted. The model weights (not your data) are returned to you.</div></div></div>
+    <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">How much does training cost?</button><div class="faq-a"><div class="faq-a-inner">Typical fine-tuning jobs range from $2 to $20 per run depending on dataset size and model size. Most users retrain once every few weeks as new data accumulates. The agentic system only triggers retraining when it's genuinely worthwhile — saving you money on unnecessary compute.</div></div></div>
+    <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">What happens if the new trained model is worse than the old one?</button><div class="faq-a"><div class="faq-a-inner">It never gets deployed. The evaluation agent benchmarks the new model before anything switches. If it scores lower, the old one stays and the diagnostician tells you exactly what went wrong in plain English — not technical jargon.</div></div></div>
+    <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">What types of AI tasks does PrivaTrain support?</button><div class="faq-a"><div class="faq-a-inner">The model marketplace includes base models for: document Q&A and summarisation, text classification and routing, image and visual inspection, named entity recognition, and conversational assistants trained on your knowledge base. More task types are added regularly.</div></div></div>
   </div>
 </section>
 
@@ -1069,15 +1045,11 @@ footer {
 <section id="contact" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
   <div class="section" style="padding-top:80px;padding-bottom:80px;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;">
-
-      <!-- Left: founder info -->
-      <div>
+      <div class="reveal">
         <div class="section-label">Get In Touch</div>
         <h2 style="margin-bottom:20px;">Let's talk about your use case</h2>
         <p style="color:var(--muted);font-size:16px;margin-bottom:40px;font-weight:300;">PrivaTrain is in early access. If you're in healthcare, legal, finance, or manufacturing and want a private AI that gets smarter on your data — reach out directly.</p>
-
-        <!-- Founder card -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:32px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:32px;transition:border-color 0.3s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.25)'" onmouseout="this.style.borderColor='var(--border)'">
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
             <div style="width:52px;height:52px;border-radius:50%;background:var(--teal-dim);border:2px solid rgba(45,212,191,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--teal);flex-shrink:0;">AK</div>
             <div>
@@ -1086,88 +1058,52 @@ footer {
               <div style="font-size:12px;color:var(--muted);margin-top:2px;">📍 Cincinnati, Ohio, United States</div>
             </div>
           </div>
-
           <div style="display:flex;flex-direction:column;gap:10px;">
-            <a href="mailto:abhinav.kandula.ae@gmail.com" style="display:flex;align-items:center;gap:10px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+            <a href="mailto:abhinav.kandula.ae@gmail.com" style="display:flex;align-items:center;gap:10px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.3)';this.style.color='var(--teal)';this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.transform='translateX(0)'">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
               abhinav.kandula.ae@gmail.com
             </a>
-            <a href="https://www.linkedin.com/in/kandula-abhinav-reddy" target="_blank" style="display:flex;align-items:center;gap:10px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+            <a href="https://www.linkedin.com/in/kandula-abhinav-reddy" target="_blank" style="display:flex;align-items:center;gap:10px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.3)';this.style.color='var(--teal)';this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.transform='translateX(0)'">
               <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
               linkedin.com/in/kandula-abhinav-reddy
             </a>
-            <a href="https://github.com/20R01A67E6" target="_blank" style="display:flex;align-items:center;gap:10px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.3)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+            <a href="https://github.com/20R01A67E6" target="_blank" style="display:flex;align-items:center;gap:10px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.3)';this.style.color='var(--teal)';this.style.transform='translateX(4px)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.transform='translateX(0)'">
               <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
               github.com/20R01A67E6
             </a>
           </div>
         </div>
-
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
-          <div style="background:var(--teal-dim);border:1px solid rgba(45,212,191,0.2);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
-            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Response time</div>
-            <div style="font-size:15px;font-weight:600;color:var(--text);">Within 24 hours</div>
-          </div>
-          <div style="background:var(--purple-dim);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;">
-            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--purple);margin-bottom:4px;">Stage</div>
-            <div style="font-size:15px;font-weight:600;color:var(--text);">Early access</div>
-          </div>
+          <div style="background:var(--teal-dim);border:1px solid rgba(45,212,191,0.2);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Response time</div><div style="font-size:15px;font-weight:600;color:var(--text);">Within 24 hours</div></div>
+          <div style="background:var(--purple-dim);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--purple);margin-bottom:4px;">Stage</div><div style="font-size:15px;font-weight:600;color:var(--text);">Early access</div></div>
         </div>
       </div>
 
-      <!-- Right: contact form -->
-      <div>
+      <div class="reveal" style="transition-delay:0.1s;">
         <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px;" id="formCard">
           <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;">Request early access</div>
           <div style="font-size:14px;color:var(--muted);margin-bottom:28px;">We'll reach out to discuss your specific use case personally.</div>
-
           <form id="contactForm" action="https://privtrain-demo.onrender.com/contact" method="POST" style="display:flex;flex-direction:column;gap:16px;">
-
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-              <div>
-                <label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Full name <span style="color:var(--coral);">*</span></label>
-                <input type="text" name="name" required placeholder="John Smith" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'">
-              </div>
-              <div>
-                <label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Email <span style="color:var(--coral);">*</span></label>
-                <input type="email" name="email" required placeholder="john@company.com" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'">
-              </div>
+              <div><label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Full name <span style="color:var(--coral);">*</span></label><input type="text" name="name" required placeholder="John Smith" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'"></div>
+              <div><label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Email <span style="color:var(--coral);">*</span></label><input type="email" name="email" required placeholder="john@company.com" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'"></div>
             </div>
-
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-              <div>
-                <label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Phone <span style="color:var(--coral);">*</span></label>
-                <input type="tel" name="phone" required placeholder="+1 (555) 000-0000" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'">
-              </div>
-              <div>
-                <label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Company <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
-                <input type="text" name="company" placeholder="Acme Corp" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'">
-              </div>
+              <div><label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Phone <span style="color:var(--coral);">*</span></label><input type="tel" name="phone" required placeholder="+1 (555) 000-0000" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'"></div>
+              <div><label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Company <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label><input type="text" name="company" placeholder="Acme Corp" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'"></div>
             </div>
-
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Message <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
-              <textarea name="message" rows="4" placeholder="Tell us about your use case — what kind of data do you work with, and what problem are you trying to solve?" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;transition:border-color 0.2s;line-height:1.6;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-            </div>
-
+            <div><label style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Message <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label><textarea name="message" rows="4" placeholder="Tell us about your use case — what kind of data do you work with, and what problem are you trying to solve?" style="width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;transition:border-color 0.2s;line-height:1.6;" onfocus="this.style.borderColor='rgba(45,212,191,0.4)'" onblur="this.style.borderColor='var(--border)'"></textarea></div>
             <input type="hidden" name="_subject" value="PrivaTrain Early Access Request">
-
-            <button type="submit" id="submitBtn" style="width:100%;padding:14px;background:var(--teal);color:#0a0f1a;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.2s;margin-top:4px;" onmouseover="this.style.background='#5eead4'" onmouseout="this.style.background='var(--teal)'">
-              Send Request →
-            </button>
-
+            <button type="submit" id="submitBtn" style="width:100%;padding:14px;background:var(--teal);color:#0a0f1a;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.25s;margin-top:4px;position:relative;overflow:hidden;" onmouseover="this.style.background='#5eead4';this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 20px rgba(45,212,191,0.3)'" onmouseout="this.style.background='var(--teal)';this.style.transform='translateY(0)';this.style.boxShadow='none'">Send Request →</button>
             <p style="font-size:12px;color:var(--muted);text-align:center;">No spam. No automated replies. Abhinav reads every message personally.</p>
           </form>
-
-          <!-- Success state (hidden by default) -->
           <div id="formSuccess" style="display:none;text-align:center;padding:40px 20px;">
-            <div style="font-size:48px;margin-bottom:16px;">✅</div>
+            <div style="font-size:48px;margin-bottom:16px;animation:fadeUp 0.5s ease;">✅</div>
             <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin-bottom:10px;color:var(--teal);">Message received!</div>
-            <div style="font-size:15px;color:var(--muted);">Thanks for reaching out. Abhinav will get back to you within 24 hours at your email address.</div>
+            <div style="font-size:15px;color:var(--muted);">Thanks for reaching out. Abhinav will get back to you within 24 hours.</div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </section>
@@ -1180,29 +1116,202 @@ footer {
       <div style="font-size:13px;color:var(--muted);">Private AI Training Platform · Cincinnati, Ohio</div>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-      <a href="mailto:abhinav.kandula.ae@gmail.com" title="Email" style="width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-      </a>
-      <a href="https://www.linkedin.com/in/kandula-abhinav-reddy" target="_blank" title="LinkedIn" style="width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-      </a>
-      <a href="https://github.com/20R01A67E6" target="_blank" title="GitHub" style="width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.4)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-      </a>
+      <a href="mailto:abhinav.kandula.ae@gmail.com" title="Email" style="width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.4)';this.style.color='var(--teal)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.transform='translateY(0)'"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg></a>
+      <a href="https://www.linkedin.com/in/kandula-abhinav-reddy" target="_blank" title="LinkedIn" style="width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.4)';this.style.color='var(--teal)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.transform='translateY(0)'"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+      <a href="https://github.com/20R01A67E6" target="_blank" title="GitHub" style="width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(45,212,191,0.4)';this.style.color='var(--teal)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.transform='translateY(0)'"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></a>
     </div>
-    <div style="font-size:12px;color:var(--muted);text-align:right;">
-      © 2026 PrivaTrain · Built by Abhinav Reddy Kandula<br>
-      <span style="color:var(--teal);">abhinav.kandula.ae@gmail.com</span>
-    </div>
+    <div style="font-size:12px;color:var(--muted);text-align:right;">© 2026 PrivaTrain · Built by Abhinav Reddy Kandula<br><span style="color:var(--teal);">abhinav.kandula.ae@gmail.com</span></div>
   </div>
 </footer>
 
 <script>
+// ── CUSTOM CURSOR ──
+const dot = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+function animRing() { rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(animRing); }
+animRing();
+
+// ── SCROLL PROGRESS ──
+const prog = document.getElementById('scrollProgress');
+const backTop = document.getElementById('backTop');
+window.addEventListener('scroll', () => {
+  const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+  prog.style.width = pct + '%';
+  backTop.classList.toggle('visible', window.scrollY > 400);
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 50);
+  // Active nav
+  document.querySelectorAll('nav ul a').forEach(a => {
+    const sec = document.querySelector(a.getAttribute('href'));
+    if (sec) {
+      const r = sec.getBoundingClientRect();
+      a.classList.toggle('active', r.top <= 100 && r.bottom > 100);
+    }
+  });
+});
+backTop.onclick = e => { e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); };
+
+// ── HERO CANVAS (particles) ──
+const canvas = document.getElementById('heroCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+function resizeCanvas() { canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight; }
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+for (let i=0;i<60;i++) particles.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, r:Math.random()*1.5+0.5, a:Math.random() });
+function drawParticles() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p => {
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
+    if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(45,212,191,${p.a*0.6})`; ctx.fill();
+  });
+  particles.forEach((p,i) => {
+    for(let j=i+1;j<particles.length;j++) {
+      const d=Math.hypot(p.x-particles[j].x,p.y-particles[j].y);
+      if(d<120) { ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(particles[j].x,particles[j].y); ctx.strokeStyle=`rgba(45,212,191,${(1-d/120)*0.12})`; ctx.lineWidth=0.5; ctx.stroke(); }
+    }
+  });
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+// ── STAT COUNTERS ──
+function animateCount(el) {
+  const target = parseInt(el.dataset.count);
+  const prefix = el.dataset.prefix||'';
+  const suffix = el.dataset.suffix||'';
+  const label = el.dataset.label;
+  if(label) { el.textContent=label; return; }
+  let current=0;
+  const step = Math.ceil(target/40);
+  const t = setInterval(()=>{
+    current = Math.min(current+step, target);
+    el.textContent = prefix+current+suffix;
+    if(current>=target) clearInterval(t);
+  }, 30);
+}
+const statsObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) { document.querySelectorAll('.stat-num').forEach(animateCount); statsObserver.disconnect(); }});
+}, {threshold:0.5});
+document.querySelector('.hero-stats') && statsObserver.observe(document.querySelector('.hero-stats'));
+
+// ── REVEAL ON SCROLL ──
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// ── ANALOGY CARD MOUSE GLOW ──
+document.querySelectorAll('.analogy-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', ((e.clientX-r.left)/r.width*100)+'%');
+    card.style.setProperty('--my', ((e.clientY-r.top)/r.height*100)+'%');
+  });
+});
+
+// ── STEP PANEL ──
+let currentStep = 0;
 function showStep(idx) {
   document.querySelectorAll('.step-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
-  document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.step-panel-wrap').forEach((p,i) => p.classList.toggle('active', i===idx));
+  currentStep = idx;
+  if(idx===0) animateFileList();
+  if(idx===1) animateScoreBars();
+  if(idx===2) animateMixBar();
+  if(idx===3) animateTerminal();
+  if(idx===4) animateScores();
 }
 
+// File list animation
+function animateFileList() {
+  const files = [
+    {icon:'📄', name:'patient_records_Q3.pdf', count:'847'},
+    {icon:'📊', name:'lab_results_2024.xlsx', count:'1,203'},
+    {icon:'📝', name:'clinical_notes_oct.docx', count:'2,114'},
+  ];
+  const el = document.getElementById('fileList');
+  el.innerHTML='';
+  document.getElementById('exampleCount').textContent='0';
+  let total=0;
+  files.forEach((f,i) => {
+    setTimeout(()=>{
+      const div = document.createElement('div');
+      div.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(45,212,191,0.07);border:1px solid rgba(45,212,191,0.2);border-radius:8px;margin-bottom:8px;font-size:13px;opacity:0;transform:translateX(-10px);transition:all 0.3s;';
+      div.innerHTML=`<span>${f.icon}</span><span style="flex:1;color:var(--text);">${f.name}</span><span style="color:var(--teal);">✓ ${f.count} examples</span>`;
+      el.appendChild(div);
+      setTimeout(()=>{ div.style.opacity='1'; div.style.transform='translateX(0)'; },50);
+      total += parseInt(f.count.replace(',',''));
+      let c=0; const t=setInterval(()=>{ c=Math.min(c+87,total); document.getElementById('exampleCount').textContent=c.toLocaleString(); if(c>=total)clearInterval(t); },20);
+    }, i*400);
+  });
+}
+
+// Score bar animation
+function animateScoreBars() {
+  document.querySelectorAll('.score-bar').forEach(bar => {
+    bar.style.width='0%';
+    setTimeout(()=>{ bar.style.width=bar.dataset.width+'%'; },100);
+  });
+}
+
+// Mix bar animation
+function animateMixBar() {
+  const bars = document.querySelectorAll('#mixBar > div');
+  bars.forEach(b => b.style.width='0%');
+  setTimeout(()=>{ if(bars[0]) bars[0].style.width='65%'; },100);
+  setTimeout(()=>{ if(bars[1]) bars[1].style.width='35%'; },400);
+}
+
+// Terminal animation
+function animateTerminal() {
+  const lines = [
+    {cls:'t-prompt',p:'▸ ',cls2:'t-cmd',t:'Starting LoRA fine-tune job #4821'},
+    {cls:'t-out',t:'  Base model: Llama-3.2-7B-Instruct'},
+    {cls:'t-out',t:'  GPU: NVIDIA A100 80GB (RunPod)'},
+    {cls:'t-out',t:'  Batch: 7,680 examples · 3 epochs'},
+    {cls:'t-out',t:'  [████████████░░░░] Epoch 1/3 — loss: 0.341'},
+    {cls:'t-ok',t:'  ✓ Epoch 2/3 — loss: 0.198 ↓'},
+    {cls:'t-ok',t:'  ✓ Epoch 3/3 — loss: 0.147 ↓'},
+    {cls:'t-ok',t:'✓ Training complete · 38 min · $4.20'},
+    {cls:'t-out',t:'  Returning model weights to user...'},
+    {cls:'t-warn',t:'  Raw data: never stored · Container: destroyed'},
+  ];
+  const el = document.getElementById('terminalOutput');
+  el.innerHTML='';
+  lines.forEach((l,i)=>{
+    setTimeout(()=>{
+      const div=document.createElement('div');
+      div.className='t-line';
+      div.style.animationDelay=i*0.05+'s';
+      if(l.p) div.innerHTML=`<span class="${l.cls}">${l.p}</span><span class="${l.cls2}">${l.t}</span>`;
+      else div.innerHTML=`<span class="${l.cls}">${l.t}</span>`;
+      el.appendChild(div);
+    },i*180);
+  });
+}
+
+// Score counter animation
+function animateScores() {
+  const old=document.getElementById('oldScore');
+  const nw=document.getElementById('newScore');
+  old.textContent='0%'; nw.textContent='0%';
+  let o=0,n=0;
+  const t=setInterval(()=>{
+    o=Math.min(o+2,74); n=Math.min(n+2,88);
+    old.textContent=o+'%'; nw.textContent=n+'%';
+    if(o>=74&&n>=88) { old.textContent='74.2%'; nw.textContent='88.7%'; clearInterval(t); }
+  },30);
+}
+
+// Trigger step 0 on load
+setTimeout(animateFileList, 1200);
+
+// ── FAQ ──
 function toggleFaq(btn) {
   const item = btn.closest('.faq-item');
   const wasOpen = item.classList.contains('open');
@@ -1210,54 +1319,30 @@ function toggleFaq(btn) {
   if (!wasOpen) item.classList.add('open');
 }
 
-// Form submission handler
+// ── HAMBURGER ──
+const ham = document.getElementById('hamburger');
+const mob = document.getElementById('mobileMenu');
+ham.onclick = () => { ham.classList.toggle('open'); mob.classList.toggle('open'); };
+function closeMobile() { ham.classList.remove('open'); mob.classList.remove('open'); }
+
+// ── FORM ──
 const form = document.getElementById('contactForm');
 if (form) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
-    btn.textContent = 'Sending...';
-    btn.style.opacity = '0.7';
-    btn.disabled = true;
+    btn.textContent='Sending...'; btn.style.opacity='0.7'; btn.disabled=true;
     try {
       const res = await fetch('https://privtrain-demo.onrender.com/contact', {
-        method: 'POST',
-        body: JSON.stringify(Object.fromEntries(new FormData(form))),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        method:'POST',
+        body:JSON.stringify(Object.fromEntries(new FormData(form))),
+        headers:{'Content-Type':'application/json','Accept':'application/json'}
       });
-      if (res.ok) {
-        form.style.display = 'none';
-        document.getElementById('formSuccess').style.display = 'block';
-      } else {
-        btn.textContent = 'Something went wrong — email us directly';
-        btn.style.opacity = '1';
-        btn.disabled = false;
-      }
-    } catch {
-      btn.textContent = 'Something went wrong — email us directly';
-      btn.style.opacity = '1';
-      btn.disabled = false;
-    }
+      if(res.ok) { form.style.display='none'; document.getElementById('formSuccess').style.display='block'; }
+      else { btn.textContent='Something went wrong — email us directly'; btn.style.opacity='1'; btn.disabled=false; }
+    } catch { btn.textContent='Something went wrong — email us directly'; btn.style.opacity='1'; btn.disabled=false; }
   });
 }
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.style.opacity = '1';
-      e.target.style.transform = 'translateY(0)';
-    }
-  });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.analogy-card, .usecase-card, .faq-item').forEach((el, i) => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s`;
-  observer.observe(el);
-});
 </script>
 </body>
 </html>
